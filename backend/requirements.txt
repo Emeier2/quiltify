@@ -1,0 +1,28 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0
+python-multipart
+httpx>=0.27.0
+
+# Image generation (GPU-heavy; comment out if running CPU-only)
+diffusers>=0.30.0
+transformers>=4.40.0
+accelerate>=0.30.0
+torch>=2.2.0
+bitsandbytes>=0.43.0      # 4-bit quantization for FLUX
+controlnet_aux>=0.0.7
+
+# Image segmentation
+segment-anything
+
+# Image processing
+opencv-python>=4.9.0
+scikit-learn>=1.4.0
+Pillow>=10.0.0
+numpy>=1.26.0
+
+# SVG generation
+svgwrite>=1.4.3
+
+# PDF export (optional)
+weasyprint
