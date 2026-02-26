@@ -76,7 +76,7 @@ export function GeneratePage({ onSendToExport }: GeneratePageProps) {
         Generate from Prompt
       </h1>
       <p style={{ color: '#888', fontSize: 14, marginBottom: 24 }}>
-        Describe a subject and Quiltify will generate an Elizabeth Hartman-style quilt pattern.
+        Describe a subject and Quiltify will generate a pictorial modern quilt pattern.
       </p>
 
       <PromptInput onSubmit={handleGenerate} loading={loading} />

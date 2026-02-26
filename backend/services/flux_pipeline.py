@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 FLUX_MODEL_ID = "black-forest-labs/FLUX.1-dev"
 FLUX_MODEL_ID_SCHNELL = "black-forest-labs/FLUX.1-schnell"  # fallback, no auth needed
 
-# Elizabeth Hartman style suffix appended to all prompts
-HARTMAN_SUFFIX = (
-    ", Elizabeth Hartman modern quilt pattern, solid fabric geometric squares and rectangles, "
+# Style suffix appended to all prompts
+STYLE_SUFFIX = (
+    ", pictorial modern quilt pattern, solid fabric geometric squares and rectangles, "
     "bold solid colors, pictorial patchwork design, clean grid lines, quilt top view, "
     "no gradients no shading no textures"
 )
@@ -105,7 +105,7 @@ def generate_quilt_image(
 
     import torch
 
-    full_prompt = prompt + HARTMAN_SUFFIX
+    full_prompt = prompt + STYLE_SUFFIX
     generator = torch.Generator().manual_seed(seed) if seed is not None else None
 
     kwargs: dict = {

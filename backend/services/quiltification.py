@@ -1,5 +1,5 @@
 """
-Quiltification Pipeline — turns an input photo into a Hartman-style quilt image.
+Quiltification Pipeline — turns an input photo into a pictorial modern quilt image.
 
 Pipeline:
   1. SAM (sam-vit-base) segments the input image into regions
@@ -78,7 +78,7 @@ def quiltify_image(
     guidance_scale: float = 3.5,
 ) -> Optional[bytes]:
     """
-    Transform an input image into a Hartman-style quilt.
+    Transform an input image into a pictorial modern quilt.
     Returns JPEG bytes of the quilt version, or None if unavailable.
     """
     _load_sam()
@@ -96,7 +96,7 @@ def quiltify_image(
     from PIL import Image
 
     quilt_prompt = (
-        f"{prompt}, Elizabeth Hartman modern quilt, solid fabric geometric squares "
+        f"{prompt}, pictorial modern quilt, solid fabric geometric squares "
         "and rectangles, bold solid colors, pictorial patchwork, clean grid lines, "
         "quilt top flat view, no gradients no textures no shadows"
     )

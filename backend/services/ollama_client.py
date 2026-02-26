@@ -136,7 +136,7 @@ Write the guide now. Use every number from the cutting instructions exactly as g
 
 
 def _default_guide_system_prompt() -> str:
-    return """You are an expert quilting instructor writing a clear, accurate quilting guide in the style of Elizabeth Hartman's modern quilt books.
+    return """You are an expert quilting instructor writing a clear, accurate quilting guide for pictorial modern quilts.
 
 RULES — follow these exactly:
 1. Every measurement you write MUST come from the data provided. Do not invent or estimate any number.

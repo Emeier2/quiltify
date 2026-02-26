@@ -261,8 +261,8 @@ class TestQuiltifyImage:
         img = Image.open(io.BytesIO(result))
         assert img.format == "JPEG"
 
-    def test_passes_prompt_with_hartman_style(self):
-        """Prompt is augmented with Elizabeth Hartman style directives."""
+    def test_passes_prompt_with_quilt_style(self):
+        """Prompt is augmented with pictorial modern quilt style directives."""
         image_bytes = _make_test_image_bytes()
         mock_pipe = MagicMock()
         mock_pipe.return_value = _make_fake_pipeline_result()
@@ -277,7 +277,7 @@ class TestQuiltifyImage:
 
         call_kwargs = mock_pipe.call_args[1]
         assert "golden retriever" in call_kwargs["prompt"]
-        assert "Elizabeth Hartman" in call_kwargs["prompt"]
+        assert "pictorial modern quilt" in call_kwargs["prompt"]
 
     def test_passes_controlnet_params(self):
         """ControlNet conditioning scale and inference params are passed through."""

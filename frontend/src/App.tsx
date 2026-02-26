@@ -64,7 +64,7 @@ export function App() {
           ))}
         </nav>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-          Elizabeth Hartman–style pattern generator
+          Pictorial modern quilt pattern generator
         </div>
       </header>
 

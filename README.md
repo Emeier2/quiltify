@@ -1,6 +1,6 @@
 # Quiltify
 
-AI-powered Elizabeth Hartman-style quilt pattern generator.
+AI-powered pictorial modern quilt pattern generator.
 
 Generates pictorial modern quilt patterns from text prompts or photos, and produces accurate cutting guides (cutting charts, block assembly steps, yardage calculations).
 

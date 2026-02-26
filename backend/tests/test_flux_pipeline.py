@@ -13,7 +13,7 @@ import backend.services.flux_pipeline as flux_mod
 from backend.services.flux_pipeline import (
     generate_quilt_image,
     pipeline_status,
-    HARTMAN_SUFFIX,
+    STYLE_SUFFIX,
     FLUX_MODEL_ID,
     FLUX_MODEL_ID_SCHNELL,
 )
@@ -68,17 +68,17 @@ class TestPipelineStatus:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Tests: HARTMAN_SUFFIX
+# Tests: Style suffix
 # ─────────────────────────────────────────────────────────────────────────────
 
-class TestHartmanSuffix:
+class TestStyleSuffix:
     def test_suffix_contains_quilt_keywords(self):
-        assert "Elizabeth Hartman" in HARTMAN_SUFFIX
-        assert "quilt" in HARTMAN_SUFFIX
-        assert "solid" in HARTMAN_SUFFIX
+        assert "quilt" in STYLE_SUFFIX
+        assert "solid" in STYLE_SUFFIX
+        assert "pictorial" in STYLE_SUFFIX
 
     def test_suffix_starts_with_comma(self):
-        assert HARTMAN_SUFFIX.startswith(",")
+        assert STYLE_SUFFIX.startswith(",")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ class TestGenerateQuiltImage:
                 generate_quilt_image("a cat quilt")
 
         call_kwargs = mock_pipe.call_args[1]
-        assert call_kwargs["prompt"] == "a cat quilt" + HARTMAN_SUFFIX
+        assert call_kwargs["prompt"] == "a cat quilt" + STYLE_SUFFIX
 
     def test_passes_dimensions(self):
         mock_pipe = _make_mock_pipeline()

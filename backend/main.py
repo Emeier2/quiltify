@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Quilt Studio",
-    description="AI-powered Elizabeth Hartman-style quilt pattern generator",
+    description="AI-powered pictorial modern quilt pattern generator",
     version="1.0.0",
     lifespan=lifespan,
 )

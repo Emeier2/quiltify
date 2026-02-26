@@ -222,7 +222,7 @@ class TestGenerateGuide:
 
         system_prompt = mock_chat.call_args[0][0]
         # Should load from guide_writing.txt (which exists)
-        assert "Elizabeth Hartman" in system_prompt
+        assert "quilting" in system_prompt.lower()
 
     @pytest.mark.asyncio
     async def test_falls_back_to_default_prompt(self):

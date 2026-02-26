@@ -6,7 +6,7 @@
 
 ## 1. Product Overview
 
-**Quiltify** (project directory: `quilt-studio`) is an AI-powered web application that generates Elizabeth Hartman-style pictorial modern quilt patterns from text prompts or photos, then produces accurate, buildable cutting guides (cutting charts, block assembly steps, yardage calculations).
+**Quiltify** (project directory: `quilt-studio`) is an AI-powered web application that generates pictorial modern quilt patterns from text prompts or photos, then produces accurate, buildable cutting guides (cutting charts, block assembly steps, yardage calculations).
 
 ### Core Design Principle
 
