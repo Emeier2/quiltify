@@ -1,0 +1,70 @@
+{
+  "prompt": "A cat face with pointed ears",
+  "grid_width": 8,
+  "grid_height": 10,
+  "quilt_width_in": 20.0,
+  "quilt_height_in": 25.0,
+  "fabrics": [
+    {"id": "f1", "color_hex": "#2C3E50", "name": "Dark Slate"},
+    {"id": "f2", "color_hex": "#E67E22", "name": "Orange"},
+    {"id": "f3", "color_hex": "#F5E6CC", "name": "Cream"},
+    {"id": "f4", "color_hex": "#1A1A2E", "name": "Charcoal"}
+  ],
+  "blocks": [
+    {"x": 0, "y": 0, "width": 8, "height": 1, "fabric_id": "f1", "corners": {}},
+
+    {"x": 0, "y": 1, "width": 1, "height": 1, "fabric_id": "f1", "corners": {}},
+    {"x": 1, "y": 1, "width": 1, "height": 1, "fabric_id": "f2", "corners": {"nw": "f1"}},
+    {"x": 2, "y": 1, "width": 4, "height": 1, "fabric_id": "f1", "corners": {}},
+    {"x": 6, "y": 1, "width": 1, "height": 1, "fabric_id": "f2", "corners": {"ne": "f1"}},
+    {"x": 7, "y": 1, "width": 1, "height": 1, "fabric_id": "f1", "corners": {}},
+
+    {"x": 0, "y": 2, "width": 1, "height": 5, "fabric_id": "f1", "corners": {}},
+    {"x": 1, "y": 2, "width": 6, "height": 1, "fabric_id": "f2", "corners": {}},
+    {"x": 7, "y": 2, "width": 1, "height": 5, "fabric_id": "f1", "corners": {}},
+
+    {"x": 1, "y": 3, "width": 1, "height": 1, "fabric_id": "f2", "corners": {}},
+    {"x": 2, "y": 3, "width": 1, "height": 1, "fabric_id": "f4", "corners": {}},
+    {"x": 3, "y": 3, "width": 2, "height": 1, "fabric_id": "f2", "corners": {}},
+    {"x": 5, "y": 3, "width": 1, "height": 1, "fabric_id": "f4", "corners": {}},
+    {"x": 6, "y": 3, "width": 1, "height": 1, "fabric_id": "f2", "corners": {}},
+
+    {"x": 1, "y": 4, "width": 2, "height": 1, "fabric_id": "f2", "corners": {}},
+    {"x": 3, "y": 4, "width": 2, "height": 1, "fabric_id": "f3", "corners": {}},
+    {"x": 5, "y": 4, "width": 2, "height": 1, "fabric_id": "f2", "corners": {}},
+
+    {"x": 1, "y": 5, "width": 1, "height": 1, "fabric_id": "f2", "corners": {}},
+    {"x": 2, "y": 5, "width": 1, "height": 1, "fabric_id": "f3", "corners": {}},
+    {"x": 3, "y": 5, "width": 2, "height": 1, "fabric_id": "f4", "corners": {}},
+    {"x": 5, "y": 5, "width": 1, "height": 1, "fabric_id": "f3", "corners": {}},
+    {"x": 6, "y": 5, "width": 1, "height": 1, "fabric_id": "f2", "corners": {}},
+
+    {"x": 1, "y": 6, "width": 1, "height": 1, "fabric_id": "f2", "corners": {}},
+    {"x": 2, "y": 6, "width": 4, "height": 1, "fabric_id": "f3", "corners": {}},
+    {"x": 6, "y": 6, "width": 1, "height": 1, "fabric_id": "f2", "corners": {}},
+
+    {"x": 0, "y": 7, "width": 2, "height": 1, "fabric_id": "f1", "corners": {}},
+    {"x": 2, "y": 7, "width": 1, "height": 1, "fabric_id": "f2", "corners": {"sw": "f1"}},
+    {"x": 3, "y": 7, "width": 2, "height": 1, "fabric_id": "f2", "corners": {}},
+    {"x": 5, "y": 7, "width": 1, "height": 1, "fabric_id": "f2", "corners": {"se": "f1"}},
+    {"x": 6, "y": 7, "width": 2, "height": 1, "fabric_id": "f1", "corners": {}},
+
+    {"x": 0, "y": 8, "width": 3, "height": 1, "fabric_id": "f1", "corners": {}},
+    {"x": 3, "y": 8, "width": 2, "height": 1, "fabric_id": "f2", "corners": {}},
+    {"x": 5, "y": 8, "width": 3, "height": 1, "fabric_id": "f1", "corners": {}},
+
+    {"x": 0, "y": 9, "width": 8, "height": 1, "fabric_id": "f1", "corners": {}}
+  ],
+  "cell_sizes": [
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5},
+    {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}, {"w": 2.5, "h": 2.5}
+  ]
+}

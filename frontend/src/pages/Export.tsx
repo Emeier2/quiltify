@@ -33,8 +33,8 @@ export function ExportPage({ pattern }: Props) {
     }
   }
 
-  const w = pattern.finished_width_in ?? pattern.grid_width * pattern.block_size_in
-  const h = pattern.finished_height_in ?? pattern.grid_height * pattern.block_size_in
+  const w = pattern.finished_width_in ?? pattern.quilt_width_in
+  const h = pattern.finished_height_in ?? pattern.quilt_height_in
 
   return (
     <div style={{ maxWidth: 700, margin: '0 auto', padding: '24px 20px' }}>

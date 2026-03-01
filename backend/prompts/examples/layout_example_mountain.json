@@ -1,0 +1,27 @@
+{
+  "prompt": "A mountain landscape with snow cap and forest",
+  "grid_width": 10,
+  "grid_height": 12,
+  "fabrics": [
+    {"id": "f1", "color_hex": "#6BA3D6", "name": "Sky Blue"},
+    {"id": "f2", "color_hex": "#2D5F2D", "name": "Forest Green"},
+    {"id": "f3", "color_hex": "#8C8C8C", "name": "Stone Gray"},
+    {"id": "f4", "color_hex": "#F5F5F5", "name": "Snow White"}
+  ],
+  "blocks": [
+    {"x": 0, "y": 0,  "width": 10, "height": 2, "fabric_id": "f1"},
+    {"x": 0, "y": 2,  "width": 4,  "height": 1, "fabric_id": "f1"},
+    {"x": 4, "y": 2,  "width": 2,  "height": 1, "fabric_id": "f4"},
+    {"x": 6, "y": 2,  "width": 4,  "height": 1, "fabric_id": "f1"},
+    {"x": 0, "y": 3,  "width": 3,  "height": 1, "fabric_id": "f1"},
+    {"x": 3, "y": 3,  "width": 4,  "height": 1, "fabric_id": "f3"},
+    {"x": 7, "y": 3,  "width": 3,  "height": 1, "fabric_id": "f1"},
+    {"x": 0, "y": 4,  "width": 2,  "height": 2, "fabric_id": "f1"},
+    {"x": 2, "y": 4,  "width": 6,  "height": 2, "fabric_id": "f3"},
+    {"x": 8, "y": 4,  "width": 2,  "height": 2, "fabric_id": "f1"},
+    {"x": 0, "y": 6,  "width": 1,  "height": 2, "fabric_id": "f1"},
+    {"x": 1, "y": 6,  "width": 8,  "height": 2, "fabric_id": "f3"},
+    {"x": 9, "y": 6,  "width": 1,  "height": 2, "fabric_id": "f1"},
+    {"x": 0, "y": 8,  "width": 10, "height": 4, "fabric_id": "f2"}
+  ]
+}

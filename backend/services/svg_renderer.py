@@ -19,8 +19,20 @@ except ImportError:
 from .grid_engine import QuiltPattern, CuttingChart
 
 
-# Pixels per grid-unit in the SVG preview
+# Pixels per inch in the SVG preview
 CELL_PX = 12
+
+
+def _col_row_offsets(pattern: QuiltPattern) -> tuple[list[float], list[float]]:
+    col_widths = pattern.column_widths()
+    row_heights = pattern.row_heights()
+    col_offsets = [0.0]
+    row_offsets = [0.0]
+    for w in col_widths:
+        col_offsets.append(col_offsets[-1] + w)
+    for h in row_heights:
+        row_offsets.append(row_offsets[-1] + h)
+    return col_offsets, row_offsets
 
 
 def render_grid_svg(pattern: QuiltPattern, cell_px: int = CELL_PX) -> str:
@@ -28,8 +40,9 @@ def render_grid_svg(pattern: QuiltPattern, cell_px: int = CELL_PX) -> str:
     if not _HAS_SVGWRITE:
         return _fallback_svg(pattern, cell_px)
 
-    width_px = pattern.grid_width * cell_px
-    height_px = pattern.grid_height * cell_px
+    col_offsets, row_offsets = _col_row_offsets(pattern)
+    width_px = col_offsets[-1] * cell_px
+    height_px = row_offsets[-1] * cell_px
 
     dwg = svgwrite.Drawing(size=(f"{width_px}px", f"{height_px}px"),
                            profile="full")
@@ -43,16 +56,43 @@ def render_grid_svg(pattern: QuiltPattern, cell_px: int = CELL_PX) -> str:
     for block in pattern.blocks:
         fab = fabric_map.get(block.fabric_id)
         color = fab.color_hex if fab else "#cccccc"
-        x = block.x * cell_px
-        y = block.y * cell_px
-        w = block.width * cell_px
-        h = block.height * cell_px
+        x = col_offsets[block.x] * cell_px
+        y = row_offsets[block.y] * cell_px
+        w, h = pattern.block_dimensions_in(block)
+        w *= cell_px
+        h *= cell_px
         dwg.add(dwg.rect(
             insert=(x, y), size=(w, h),
             fill=color,
             stroke="#ffffff",
             stroke_width=0.5,
         ))
+
+        # Corner triangles (stitch-and-flip)
+        for corner_name, corner_fab in (block.corners or {}).items():
+            if corner_name == "nw":
+                cx, cy = block.x, block.y
+            elif corner_name == "ne":
+                cx, cy = block.x + block.width - 1, block.y
+            elif corner_name == "sw":
+                cx, cy = block.x, block.y + block.height - 1
+            else:
+                cx, cy = block.x + block.width - 1, block.y + block.height - 1
+            cw, ch = pattern.cell_size_at(cx, cy)
+            px = col_offsets[cx] * cell_px
+            py = row_offsets[cy] * cell_px
+            pw = cw * cell_px
+            ph = ch * cell_px
+            corner_color = fabric_map.get(corner_fab).color_hex if fabric_map.get(corner_fab) else "#cccccc"
+            if corner_name == "nw":
+                points = [(px, py), (px + pw, py), (px, py + ph)]
+            elif corner_name == "ne":
+                points = [(px + pw, py), (px + pw, py + ph), (px, py)]
+            elif corner_name == "sw":
+                points = [(px, py + ph), (px + pw, py + ph), (px, py)]
+            else:
+                points = [(px + pw, py + ph), (px, py + ph), (px + pw, py)]
+            dwg.add(dwg.polygon(points=points, fill=corner_color, stroke="#ffffff", stroke_width=0.5))
 
     return dwg.tostring()
 
@@ -150,9 +190,21 @@ def render_cutting_diagram_svg(
                 stroke="#555",
                 stroke_width=1,
             ))
+
+            # Corner squares: draw diagonal line + "S&F" label
+            if piece.piece_type == "corner":
+                dwg.add(dwg.line(
+                    start=(px, py),
+                    end=(px + pw, py + ph),
+                    stroke=_contrasting_text(section["color"]),
+                    stroke_width=1,
+                    stroke_dasharray="4,2",
+                ))
+
             # Dimensions label inside
             label = f'{piece.cut_width_in}" × {piece.cut_height_in}"'
             qty_label = f"×{piece.quantity}"
+            type_label = "S&F" if piece.piece_type == "corner" else ""
             dwg.add(dwg.text(
                 label,
                 insert=(px + 4, py + min(14, ph - 4)),
@@ -162,7 +214,7 @@ def render_cutting_diagram_svg(
             ))
             if ph > 28:
                 dwg.add(dwg.text(
-                    qty_label,
+                    qty_label + (" " + type_label if type_label else ""),
                     insert=(px + 4, py + 26),
                     font_size="11px",
                     font_family="sans-serif",
@@ -185,22 +237,50 @@ def _contrasting_text(hex_color: str) -> str:
 
 def _fallback_svg(pattern: QuiltPattern, cell_px: int) -> str:
     """Minimal SVG fallback when svgwrite is not installed."""
-    width_px = pattern.grid_width * cell_px
-    height_px = pattern.grid_height * cell_px
+    col_offsets, row_offsets = _col_row_offsets(pattern)
+    width_px = col_offsets[-1] * cell_px
+    height_px = row_offsets[-1] * cell_px
     fabric_map = pattern.fabric_map
 
     rects = []
     for block in pattern.blocks:
         fab = fabric_map.get(block.fabric_id)
         color = fab.color_hex if fab else "#cccccc"
-        x = block.x * cell_px
-        y = block.y * cell_px
-        w = block.width * cell_px
-        h = block.height * cell_px
+        x = col_offsets[block.x] * cell_px
+        y = row_offsets[block.y] * cell_px
+        w, h = pattern.block_dimensions_in(block)
+        w *= cell_px
+        h *= cell_px
         rects.append(
             f'<rect x="{x}" y="{y}" width="{w}" height="{h}" '
             f'fill="{color}" stroke="#fff" stroke-width="0.5"/>'
         )
+        for corner_name, corner_fab in (block.corners or {}).items():
+            if corner_name == "nw":
+                cx, cy = block.x, block.y
+            elif corner_name == "ne":
+                cx, cy = block.x + block.width - 1, block.y
+            elif corner_name == "sw":
+                cx, cy = block.x, block.y + block.height - 1
+            else:
+                cx, cy = block.x + block.width - 1, block.y + block.height - 1
+            cw, ch = pattern.cell_size_at(cx, cy)
+            px = col_offsets[cx] * cell_px
+            py = row_offsets[cy] * cell_px
+            pw = cw * cell_px
+            ph = ch * cell_px
+            corner_color = fabric_map.get(corner_fab).color_hex if fabric_map.get(corner_fab) else "#cccccc"
+            if corner_name == "nw":
+                points = f"{px},{py} {px+pw},{py} {px},{py+ph}"
+            elif corner_name == "ne":
+                points = f"{px+pw},{py} {px+pw},{py+ph} {px},{py}"
+            elif corner_name == "sw":
+                points = f"{px},{py+ph} {px+pw},{py+ph} {px},{py}"
+            else:
+                points = f"{px+pw},{py+ph} {px},{py+ph} {px+pw},{py}"
+            rects.append(
+                f'<polygon points="{points}" fill="{corner_color}" stroke="#fff" stroke-width="0.5"/>'
+            )
 
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" '

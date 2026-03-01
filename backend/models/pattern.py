@@ -8,6 +8,7 @@ class BlockSchema(BaseModel):
     width: int
     height: int
     fabric_id: str
+    corners: Optional[dict[str, str]] = None
 
 
 class FabricSchema(BaseModel):
@@ -20,10 +21,13 @@ class FabricSchema(BaseModel):
 class QuiltPatternSchema(BaseModel):
     grid_width: int = Field(default=40)
     grid_height: int = Field(default=50)
-    block_size_in: float = Field(default=2.5)
+    quilt_width_in: float = Field(default=60.0)
+    quilt_height_in: float = Field(default=72.0)
     seam_allowance: float = Field(default=0.25)
     fabrics: list[FabricSchema] = []
     blocks: list[BlockSchema] = []
+    # Row-major: length = grid_width * grid_height
+    cell_sizes: list[dict[str, float]] = []
 
 
 class CutPieceSchema(BaseModel):
@@ -33,6 +37,7 @@ class CutPieceSchema(BaseModel):
     cut_width_in: float
     cut_height_in: float
     quantity: int
+    piece_type: str = Field(default="base")
 
 
 class CuttingChartSchema(BaseModel):

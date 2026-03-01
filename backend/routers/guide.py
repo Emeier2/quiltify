@@ -50,6 +50,7 @@ async def regenerate_guide(req: GuideRequest) -> dict[str, Any]:
             "cut_width_in": p.cut_width_in,
             "cut_height_in": p.cut_height_in,
             "quantity": p.quantity,
+            "piece_type": p.piece_type,
         }
         for p in chart.pieces
     ]

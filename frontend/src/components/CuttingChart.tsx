@@ -40,6 +40,7 @@ export function CuttingChart({ pieces }: Props) {
                   <th style={thStyle}>Cut Width</th>
                   <th style={thStyle}>Cut Height</th>
                   <th style={thStyle}>Quantity</th>
+                  <th style={thStyle}>Type</th>
                 </tr>
               </thead>
               <tbody>
@@ -50,6 +51,7 @@ export function CuttingChart({ pieces }: Props) {
                       <td style={tdStyle}>{piece.cut_width_in}"</td>
                       <td style={tdStyle}>{piece.cut_height_in}"</td>
                       <td style={{ ...tdStyle, fontWeight: 600 }}>{piece.quantity}</td>
+                      <td style={tdStyle}>{piece.piece_type}</td>
                     </tr>
                   ))}
               </tbody>

@@ -35,7 +35,7 @@ async def export_csv(req: GuideRequest) -> StreamingResponse:
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Fabric", "Color Hex", "Cut Width (in)", "Cut Height (in)", "Quantity"])
+    writer.writerow(["Fabric", "Color Hex", "Cut Width (in)", "Cut Height (in)", "Quantity", "Piece Type"])
     for piece in chart.pieces:
         writer.writerow([
             piece.fabric_name,
@@ -43,6 +43,7 @@ async def export_csv(req: GuideRequest) -> StreamingResponse:
             piece.cut_width_in,
             piece.cut_height_in,
             piece.quantity,
+            piece.piece_type,
         ])
 
     output.seek(0)
@@ -87,7 +88,8 @@ def _build_pdf_html(
 ) -> str:
     table_rows = "".join(
         f"<tr><td>{p.fabric_name}</td><td>{p.color_hex}</td>"
-        f"<td>{p.cut_width_in}\"</td><td>{p.cut_height_in}\"</td><td>{p.quantity}</td></tr>"
+        f"<td>{p.cut_width_in}\"</td><td>{p.cut_height_in}\"</td>"
+        f"<td>{p.quantity}</td><td>{p.piece_type}</td></tr>"
         for p in chart.pieces
     )
     instructions_html = "<br>".join(cut_instructions)
@@ -109,14 +111,13 @@ def _build_pdf_html(
 <body>
 <h1>Quiltify — Pattern Guide</h1>
 <p>Finished size: {pattern.finished_width_in:.1f}" × {pattern.finished_height_in:.1f}"
-   &nbsp;|&nbsp; Block size: {pattern.block_size_in}" finished
    &nbsp;|&nbsp; Seam allowance: {pattern.seam_allowance}"</p>
 
 <div class="quilt-svg">{svg}</div>
 
 <h2>Cutting Chart</h2>
 <table>
-  <tr><th>Fabric</th><th>Color</th><th>Width</th><th>Height</th><th>Qty</th></tr>
+  <tr><th>Fabric</th><th>Color</th><th>Width</th><th>Height</th><th>Qty</th><th>Type</th></tr>
   {table_rows}
 </table>
 

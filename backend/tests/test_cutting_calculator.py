@@ -29,8 +29,9 @@ def _simple_pattern() -> QuiltPattern:
     ]
     return QuiltPattern(
         grid_width=10, grid_height=10,
-        block_size_in=2.5, seam_allowance=0.25,
+        quilt_width_in=25.0, quilt_height_in=25.0, seam_allowance=0.25,
         fabrics=fabrics, blocks=blocks,
+        cell_sizes=[{"w": 2.5, "h": 2.5} for _ in range(100)],
     )
 
 
@@ -134,6 +135,73 @@ class TestComputeWofYardage:
         yards = _compute_wof_yardage(pieces, 44.0)
         # Piece wider than fabric — still should compute without error
         assert yards > 0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tests: corner square waste factor
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _pattern_with_corners() -> QuiltPattern:
+    """4x4 grid, 2.5" cells, 2 fabrics. Block at top has 2 NE/SE corners."""
+    fabrics = [
+        Fabric(id="f1", color_hex="#1b2d5b", name="Navy"),
+        Fabric(id="f2", color_hex="#c43428", name="Red"),
+    ]
+    blocks = [
+        Block(x=0, y=0, width=4, height=2, fabric_id="f1",
+              corners={"ne": "f2", "se": "f2"}),
+        Block(x=0, y=2, width=4, height=2, fabric_id="f2"),
+    ]
+    return QuiltPattern(
+        grid_width=4, grid_height=4,
+        quilt_width_in=10.0, quilt_height_in=10.0, seam_allowance=0.25,
+        fabrics=fabrics, blocks=blocks,
+        cell_sizes=[{"w": 2.5, "h": 2.5} for _ in range(16)],
+    )
+
+
+class TestCornerWasteFactor:
+    def test_corner_waste_higher_than_base(self):
+        """Fabric with only corner squares should require more material
+        per sq in than fabric with only base rectangles."""
+        from backend.services.cutting_calculator import CORNER_WASTE_FACTOR, WASTE_FACTOR
+        assert CORNER_WASTE_FACTOR > WASTE_FACTOR
+
+    def test_corner_pieces_increase_yardage(self):
+        """A pattern with corners should require more total fabric than
+        the same pattern without corners (because corner waste is higher)."""
+        p_corners = _pattern_with_corners()
+        chart_corners = p_corners.to_cutting_chart()
+        reqs_corners = calculate_requirements(chart_corners, p_corners.fabrics)
+
+        # Same pattern but without corners
+        p_no_corners = _simple_pattern()
+        chart_no_corners = p_no_corners.to_cutting_chart()
+        reqs_no_corners = calculate_requirements(chart_no_corners, p_no_corners.fabrics)
+
+        # Red fabric in corner pattern has corner squares → higher fat quarter count
+        red_with = next(r for r in reqs_corners if r.fabric_name == "Red")
+        red_without = next(r for r in reqs_no_corners if r.fabric_name == "Red")
+        # Corner version should need at least as many fat quarters
+        assert red_with.fat_quarters_needed >= red_without.fat_quarters_needed
+
+    def test_cutting_sequence_labels_corners(self):
+        """Cutting sequence should label corner pieces as stitch-and-flip."""
+        p = _pattern_with_corners()
+        chart = p.to_cutting_chart()
+        instructions = format_cutting_sequence(chart, p.fabrics)
+        text = "\n".join(instructions)
+        assert "stitch-and-flip" in text
+
+    def test_cutting_sequence_has_both_types(self):
+        """Cutting sequence for a pattern with corners should mention both
+        base rectangles and corner squares."""
+        p = _pattern_with_corners()
+        chart = p.to_cutting_chart()
+        instructions = format_cutting_sequence(chart, p.fabrics)
+        text = "\n".join(instructions)
+        assert "base rectangles" in text
+        assert "corner squares" in text
 
 
 if __name__ == "__main__":

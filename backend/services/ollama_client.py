@@ -13,8 +13,11 @@ from pathlib import Path
 import httpx
 
 OLLAMA_BASE = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:32b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:14b")
+OLLAMA_MODEL_GEOMETRY = os.environ.get("OLLAMA_MODEL_GEOMETRY", "qwen2.5:14b")
+OLLAMA_MODEL_CRITIC = os.environ.get("OLLAMA_MODEL_CRITIC", "gemma3:12b")
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+EXAMPLES_DIR = PROMPTS_DIR / "examples"
 
 
 def _load_prompt(filename: str) -> str:
@@ -22,6 +25,49 @@ def _load_prompt(filename: str) -> str:
     if path.exists():
         return path.read_text(encoding="utf-8")
     return ""
+
+
+def _load_examples(pattern: str) -> list[dict]:
+    """Load JSON example files matching *pattern* from the examples directory.
+
+    Each JSON file must have ``"prompt"``/``"input"`` and an expected output
+    field.  Returns a list of ``{"role": "user", ...}`` / ``{"role":
+    "assistant", ...}`` message pairs suitable for few-shot prompting.
+    """
+    messages: list[dict] = []
+    if not EXAMPLES_DIR.is_dir():
+        return messages
+    for path in sorted(EXAMPLES_DIR.glob(pattern)):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+
+        # Layout examples: user=prompt+grid spec, assistant=JSON output
+        if "prompt" in data and "blocks" in data:
+            qw = data.get("quilt_width_in", "")
+            qh = data.get("quilt_height_in", "")
+            user_content = (
+                f"Create a quilt pattern JSON for: '{data['prompt']}'\n"
+                f"Grid: {data['grid_width']} wide x {data['grid_height']} tall\n"
+            )
+            if qw and qh:
+                user_content += f"Quilt size: {qw}\" wide x {qh}\" tall\n"
+            user_content += (
+                f"Use exactly {len(data['fabrics'])} fabrics.\n"
+                f"Return ONLY valid JSON, no explanation."
+            )
+            output_dict: dict = {"fabrics": data["fabrics"], "blocks": data["blocks"]}
+            if "cell_sizes" in data:
+                output_dict["cell_sizes"] = data["cell_sizes"]
+            assistant_content = json.dumps(output_dict, separators=(",", ":"))
+            messages.append({"role": "user", "content": user_content})
+            messages.append({"role": "assistant", "content": assistant_content})
+        # Guide examples: explicit input/output
+        elif "input" in data and "output" in data:
+            messages.append({"role": "user", "content": data["input"]})
+            messages.append({"role": "assistant", "content": data["output"]})
+    return messages
 
 
 async def generate_guide(
@@ -38,8 +84,9 @@ async def generate_guide(
         system_prompt = _default_guide_system_prompt()
 
     user_message = _build_guide_user_message(pattern_json, cutting_instructions, title)
+    examples = _load_examples("guide_example*.json")
 
-    return await _chat(system_prompt, user_message)
+    return await _chat(system_prompt, user_message, extra_messages=examples)
 
 
 async def generate_block_layout(
@@ -47,39 +94,96 @@ async def generate_block_layout(
     grid_width: int,
     grid_height: int,
     palette_size: int,
+    quilt_width_in: float,
+    quilt_height_in: float,
 ) -> dict:
     """
-    Ask Ollama to suggest a JSON block layout based on a text prompt.
+    Ask Ollama to suggest a JSON block layout with per-cell sizes and corners.
     Used as a fallback when FLUX is unavailable.
     """
-    system_prompt = _load_prompt("json_layout.txt")
+    system_prompt = _load_prompt("geometry_layout.txt")
     if not system_prompt:
         system_prompt = _default_layout_system_prompt()
 
     user_message = (
         f"Create a quilt pattern JSON for: '{prompt}'\n"
-        f"Grid: {grid_width} wide × {grid_height} tall\n"
+        f"Grid: {grid_width} wide x {grid_height} tall\n"
+        f"Quilt size: {quilt_width_in}\" wide x {quilt_height_in}\" tall\n"
         f"Use exactly {palette_size} fabrics.\n"
         f"Return ONLY valid JSON, no explanation."
     )
+    examples = _load_examples("geometry_example*.json")
 
-    raw = await _chat(system_prompt, user_message)
-    # Extract JSON from response
-    try:
-        start = raw.find("{")
-        end = raw.rfind("}") + 1
-        return json.loads(raw[start:end])
-    except (json.JSONDecodeError, ValueError):
+    raw = await _chat_with_model(
+        model=OLLAMA_MODEL_GEOMETRY,
+        system_prompt=system_prompt,
+        user_message=user_message,
+        extra_messages=examples,
+    )
+    layout = _extract_json(raw)
+    if not layout:
         return {}
 
+    # Critique/repair pass with smaller model
+    critic_prompt = _load_prompt("geometry_critic.txt")
+    if critic_prompt:
+        critic_message = (
+            "Validate and repair this quilt JSON. Fix any errors and return ONLY JSON.\n"
+            f"Grid: {grid_width}x{grid_height}\n"
+            f"Quilt size: {quilt_width_in}x{quilt_height_in} inches\n"
+            f"Input JSON:\n{json.dumps(layout)}"
+        )
+        repaired_raw = await _chat_with_model(
+            model=OLLAMA_MODEL_CRITIC,
+            system_prompt=critic_prompt,
+            user_message=critic_message,
+        )
+        repaired = _extract_json(repaired_raw)
+        if repaired:
+            return repaired
 
-async def _chat(system_prompt: str, user_message: str, timeout: float = 120.0) -> str:
+    return layout
+
+
+async def _chat(
+    system_prompt: str,
+    user_message: str,
+    timeout: float = 120.0,
+    extra_messages: list[dict] | None = None,
+) -> str:
+    messages = [{"role": "system", "content": system_prompt}]
+    if extra_messages:
+        messages.extend(extra_messages)
+    messages.append({"role": "user", "content": user_message})
+
     payload = {
         "model": OLLAMA_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
+        "messages": messages,
+        "stream": False,
+        "options": {"temperature": 0.3, "num_predict": 2048},
+    }
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        resp = await client.post(f"{OLLAMA_BASE}/api/chat", json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["message"]["content"]
+
+
+async def _chat_with_model(
+    model: str,
+    system_prompt: str,
+    user_message: str,
+    timeout: float = 120.0,
+    extra_messages: list[dict] | None = None,
+) -> str:
+    messages = [{"role": "system", "content": system_prompt}]
+    if extra_messages:
+        messages.extend(extra_messages)
+    messages.append({"role": "user", "content": user_message})
+
+    payload = {
+        "model": model,
+        "messages": messages,
         "stream": False,
         "options": {"temperature": 0.3, "num_predict": 2048},
     }
@@ -106,7 +210,6 @@ def _build_guide_user_message(
 ) -> str:
     finished_w = pattern_json.get("finished_width_in", "?")
     finished_h = pattern_json.get("finished_height_in", "?")
-    block_sz = pattern_json.get("block_size_in", 2.5)
     sa = pattern_json.get("seam_allowance", 0.25)
     fabrics = pattern_json.get("fabrics", [])
     blocks = pattern_json.get("blocks", [])
@@ -122,7 +225,6 @@ def _build_guide_user_message(
 
 TITLE: {title or 'Modern Geometric Quilt'}
 FINISHED SIZE: {finished_w}" × {finished_h}"
-FINISHED BLOCK SIZE: {block_sz}"
 SEAM ALLOWANCE: {sa}"
 TOTAL BLOCKS: {len(blocks)}
 
@@ -163,13 +265,23 @@ The JSON format:
     {"id": "f1", "color_hex": "#hex", "name": "Kona Cotton - ColorName"}
   ],
   "blocks": [
-    {"x": 0, "y": 0, "width": 2, "height": 3, "fabric_id": "f1"}
-  ]
+    {"x": 0, "y": 0, "width": 2, "height": 3, "fabric_id": "f1", "corners": {}}
+  ],
+  "cell_sizes": [{"w": 1.0, "h": 1.0}]
 }
 
 Rules:
 - Blocks must not overlap
 - Blocks must cover every cell in the grid
-- Use simple rectangular blocks (no triangles, curves, or HSTs)
+- Stitch-and-flip corners may be specified per block in "corners"
 - Design the pattern to suggest the subject (animal, plant, landscape) using solid-color rectangles
 - Each fabric id must be referenced in at least one block"""
+
+
+def _extract_json(raw: str) -> dict:
+    try:
+        start = raw.find("{")
+        end = raw.rfind("}") + 1
+        return json.loads(raw[start:end])
+    except (json.JSONDecodeError, ValueError):
+        return {}

@@ -8,7 +8,8 @@ class GenerateRequest(BaseModel):
     grid_width: int = Field(default=40, ge=10, le=100)
     grid_height: int = Field(default=50, ge=10, le=100)
     palette_size: int = Field(default=6, ge=2, le=12)
-    block_size_inches: float = Field(default=2.5, ge=1.0, le=6.0)
+    quilt_width_in: float = Field(default=60.0, ge=1.0, le=200.0)
+    quilt_height_in: float = Field(default=72.0, ge=1.0, le=200.0)
 
 
 class QuiltifyRequest(BaseModel):
@@ -16,7 +17,8 @@ class QuiltifyRequest(BaseModel):
     grid_width: int = Field(default=40, ge=10, le=100)
     grid_height: int = Field(default=50, ge=10, le=100)
     palette_size: int = Field(default=6, ge=2, le=12)
-    block_size_inches: float = Field(default=2.5, ge=1.0, le=6.0)
+    quilt_width_in: float = Field(default=60.0, ge=1.0, le=200.0)
+    quilt_height_in: float = Field(default=72.0, ge=1.0, le=200.0)
 
 
 class GuideRequest(BaseModel):

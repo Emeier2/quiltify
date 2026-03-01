@@ -77,6 +77,11 @@ quilt-studio/
     prompts/
       guide_writing.txt        # System prompt for Ollama guide generation
       json_layout.txt          # System prompt for Ollama block layout generation
+      examples/                # Few-shot example JSON files for Ollama prompts
+        layout_example_bird.json
+        layout_example_mountain.json
+        layout_example_flower.json
+        guide_example.json
     data/
       kona_cotton_palette.json # ~160 Kona Cotton colors with hex/RGB/CIELAB
     tests/
@@ -190,9 +195,10 @@ App.tsx
 - `svg_renderer.py` — grid SVG and cutting diagram SVG; fallback for missing svgwrite
 - `flux_pipeline.py` — full FLUX.1-dev Q4 → schnell fallback chain
 - `quiltification.py` — full SAM + ControlNet pipeline with Canny fallback paths
-- `ollama_client.py` — `generate_guide()` and `generate_block_layout()` both implemented
+- `ollama_client.py` — `generate_guide()` and `generate_block_layout()` both implemented; few-shot examples via `_load_examples()` for both layout and guide generation
 - `export.py` — SVG and CSV complete; PDF via weasyprint with full HTML template
-- 126 unit tests — all passing (all 7 service modules + grid_extractor fallback)
+- `prompts/examples/` — 3 hand-validated layout examples (bird, mountain, flower) + 1 guide example for few-shot prompting
+- 140 unit tests — all passing (all 7 service modules + grid_extractor fallback + few-shot example validation)
 
 ### Frontend (fully implemented)
 - All 3 pages built with async loading states, error handling, recalculate flows
@@ -227,7 +233,7 @@ All 8 service modules now have test coverage. 126 tests, all passing.
 - `color_matcher.py` — 16 tests
 - `cutting_calculator.py` — 11 tests
 - `svg_renderer.py` — 15 tests
-- `ollama_client.py` — 25 tests (mocked httpx, pytest-asyncio)
+- `ollama_client.py` — 39 tests (mocked httpx, pytest-asyncio, few-shot example validation)
 - `flux_pipeline.py` — 16 tests (mocked diffusers/torch, fallback chain)
 - `quiltification.py` — 17 tests (mocked SAM/ControlNet/cv2, all 4 edge detection paths)
 
@@ -306,6 +312,8 @@ All files were created in a single build session on **February 20, 2025** betwee
 **February 22, 2026**: Bug fix + feature session. Fixed Export page wiring (Bug 1), added Cutting Diagram tab (Gap 2), wired Ollama layout fallback (Gap 4), added 42 new tests for color_matcher/cutting_calculator/svg_renderer (Gap 6 partial), removed unused react-router-dom (Gap 7), installed deps (Gap 8), updated Ollama model default from qwen2.5:14b to qwen2.5:32b.
 
 **February 25, 2026**: Test coverage completion. Added 58 new tests for the 3 remaining untested service modules: `ollama_client.py` (25 tests), `flux_pipeline.py` (16 tests), `quiltification.py` (17 tests). All use mocked GPU/network dependencies. Total: 126 tests, all passing. Installed pytest-asyncio. Gap 6 fully closed.
+
+**February 27, 2026**: Few-shot examples for Ollama prompts. Added `backend/prompts/examples/` with 3 hand-validated layout examples (bird 12x14, mountain 10x12, flower 10x12) and 1 guide example (checkerboard with all 7 section headers). Refactored `_chat()` with `extra_messages` parameter and added `_load_examples()` helper. Both `generate_guide()` and `generate_block_layout()` now inject few-shot user/assistant pairs. Updated `json_layout.txt` to remove "Kona Cotton" brand references and use generalized fabric names. Added cue lines to both prompt files referencing few-shot examples. Added 14 new tests covering example loading, validation, content checks, and message sequencing. Total: 140 tests.
 
 ---
 

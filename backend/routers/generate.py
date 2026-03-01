@@ -52,7 +52,8 @@ async def generate_pattern(req: GenerateRequest) -> dict[str, Any]:
             grid_width=req.grid_width,
             grid_height=req.grid_height,
             palette_size=req.palette_size,
-            block_size_in=req.block_size_inches,
+            quilt_width_in=req.quilt_width_in,
+            quilt_height_in=req.quilt_height_in,
         )
     else:
         # Try Ollama layout generation as intermediate fallback
@@ -62,12 +63,15 @@ async def generate_pattern(req: GenerateRequest) -> dict[str, Any]:
                 grid_width=req.grid_width,
                 grid_height=req.grid_height,
                 palette_size=req.palette_size,
+                quilt_width_in=req.quilt_width_in,
+                quilt_height_in=req.quilt_height_in,
             )
             if layout_json:
                 pattern = grid_engine.QuiltPattern.from_dict({
                     "grid_width": req.grid_width,
                     "grid_height": req.grid_height,
-                    "block_size_in": req.block_size_inches,
+                    "quilt_width_in": req.quilt_width_in,
+                    "quilt_height_in": req.quilt_height_in,
                     "seam_allowance": 0.25,
                     **layout_json,
                 })
@@ -86,7 +90,8 @@ async def generate_pattern(req: GenerateRequest) -> dict[str, Any]:
                 grid_width=req.grid_width,
                 grid_height=req.grid_height,
                 palette_size=req.palette_size,
-                block_size_in=req.block_size_inches,
+                quilt_width_in=req.quilt_width_in,
+                quilt_height_in=req.quilt_height_in,
                 seam_allowance=0.25,
             )
             confidence = 0.0
@@ -126,6 +131,7 @@ async def generate_pattern(req: GenerateRequest) -> dict[str, Any]:
             "cut_width_in": p.cut_width_in,
             "cut_height_in": p.cut_height_in,
             "quantity": p.quantity,
+            "piece_type": p.piece_type,
         }
         for p in chart.pieces
     ]

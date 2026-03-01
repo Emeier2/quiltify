@@ -27,7 +27,8 @@ export function QuiltifyPage({ onSendToExport }: QuiltifyPageProps) {
   const [gridWidth] = useState(40)
   const [gridHeight] = useState(50)
   const [paletteSize] = useState(6)
-  const [blockSize] = useState(2.5)
+  const [quiltWidth] = useState(60)
+  const [quiltHeight] = useState(72)
 
   function handleImageSelected(base64: string, preview: string) {
     setImageBase64(base64)
@@ -46,7 +47,8 @@ export function QuiltifyPage({ onSendToExport }: QuiltifyPageProps) {
         grid_width: gridWidth,
         grid_height: gridHeight,
         palette_size: paletteSize,
-        block_size_inches: blockSize,
+        quilt_width_in: quiltWidth,
+        quilt_height_in: quiltHeight,
       })
       setResult(res)
       setPattern(res.pattern_json)

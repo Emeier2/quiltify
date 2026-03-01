@@ -26,7 +26,8 @@ export const api = {
     grid_width: number
     grid_height: number
     palette_size: number
-    block_size_inches: number
+    quilt_width_in: number
+    quilt_height_in: number
   }): Promise<GenerateResponse> {
     return post('/api/generate', params)
   },
@@ -36,7 +37,8 @@ export const api = {
     grid_width: number
     grid_height: number
     palette_size: number
-    block_size_inches: number
+    quilt_width_in: number
+    quilt_height_in: number
   }): Promise<QuiltifyResponse> {
     return post('/api/quiltify', params)
   },

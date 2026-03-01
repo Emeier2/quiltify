@@ -12,15 +12,18 @@ export interface BlockSchema {
   width: number
   height: number
   fabric_id: string
+  corners?: { [key: string]: string }
 }
 
 export interface QuiltPatternSchema {
   grid_width: number
   grid_height: number
-  block_size_in: number
+  quilt_width_in: number
+  quilt_height_in: number
   seam_allowance: number
   fabrics: FabricSchema[]
   blocks: BlockSchema[]
+  cell_sizes: { w: number; h: number }[]
   finished_width_in?: number
   finished_height_in?: number
 }
@@ -32,6 +35,7 @@ export interface CutPiece {
   cut_width_in: number
   cut_height_in: number
   quantity: number
+  piece_type: string
 }
 
 export interface GenerateResponse {

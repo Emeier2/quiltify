@@ -11,13 +11,16 @@ import httpx
 
 from backend.services.ollama_client import (
     _load_prompt,
+    _load_examples,
     _build_guide_user_message,
     _chat,
     generate_guide,
     generate_block_layout,
     check_health,
     PROMPTS_DIR,
+    EXAMPLES_DIR,
 )
+from backend.services.grid_engine import QuiltPattern, Fabric, Block
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -28,7 +31,8 @@ def _sample_pattern_json() -> dict:
     return {
         "grid_width": 40,
         "grid_height": 50,
-        "block_size_in": 2.5,
+        "quilt_width_in": 100.0,
+        "quilt_height_in": 125.0,
         "seam_allowance": 0.25,
         "finished_width_in": 100.0,
         "finished_height_in": 125.0,
@@ -42,6 +46,7 @@ def _sample_pattern_json() -> dict:
             {"x": 0, "y": 0, "width": 40, "height": 25, "fabric_id": "f1"},
             {"x": 0, "y": 25, "width": 40, "height": 25, "fabric_id": "f2"},
         ],
+        "cell_sizes": [{"w": 2.5, "h": 2.5} for _ in range(2000)],
     }
 
 
@@ -248,9 +253,9 @@ class TestGenerateBlockLayout:
         }
         raw_response = json.dumps(layout)
 
-        with patch("backend.services.ollama_client._chat", new_callable=AsyncMock) as mock_chat:
-            mock_chat.return_value = raw_response
-            result = await generate_block_layout("owl quilt", 40, 50, 1)
+        with patch("backend.services.ollama_client._chat_with_model", new_callable=AsyncMock) as mock_chat:
+            mock_chat.side_effect = [raw_response, raw_response]
+            result = await generate_block_layout("owl quilt", 40, 50, 1, 100.0, 125.0)
 
         assert result == layout
         assert result["fabrics"][0]["id"] == "f1"
@@ -261,35 +266,37 @@ class TestGenerateBlockLayout:
         layout = {"fabrics": [{"id": "f1", "color_hex": "#fff", "name": "White"}], "blocks": []}
         raw_response = f"Here is your layout:\n{json.dumps(layout)}\nHope that helps!"
 
-        with patch("backend.services.ollama_client._chat", new_callable=AsyncMock) as mock_chat:
-            mock_chat.return_value = raw_response
-            result = await generate_block_layout("test", 10, 10, 1)
+        with patch("backend.services.ollama_client._chat_with_model", new_callable=AsyncMock) as mock_chat:
+            mock_chat.side_effect = [raw_response, raw_response]
+            result = await generate_block_layout("test", 10, 10, 1, 25.0, 25.0)
 
         assert result["fabrics"][0]["id"] == "f1"
 
     @pytest.mark.asyncio
     async def test_returns_empty_dict_on_invalid_json(self):
-        with patch("backend.services.ollama_client._chat", new_callable=AsyncMock) as mock_chat:
-            mock_chat.return_value = "I can't generate that pattern, sorry."
-            result = await generate_block_layout("test", 10, 10, 1)
+        with patch("backend.services.ollama_client._chat_with_model", new_callable=AsyncMock) as mock_chat:
+            mock_chat.side_effect = ["I can't generate that pattern, sorry.", ""]
+            result = await generate_block_layout("test", 10, 10, 1, 25.0, 25.0)
 
         assert result == {}
 
     @pytest.mark.asyncio
     async def test_returns_empty_dict_on_empty_response(self):
-        with patch("backend.services.ollama_client._chat", new_callable=AsyncMock) as mock_chat:
-            mock_chat.return_value = ""
-            result = await generate_block_layout("test", 10, 10, 1)
+        with patch("backend.services.ollama_client._chat_with_model", new_callable=AsyncMock) as mock_chat:
+            mock_chat.side_effect = ["", ""]
+            result = await generate_block_layout("test", 10, 10, 1, 25.0, 25.0)
 
         assert result == {}
 
     @pytest.mark.asyncio
     async def test_prompt_contains_grid_dimensions(self):
-        with patch("backend.services.ollama_client._chat", new_callable=AsyncMock) as mock_chat:
-            mock_chat.return_value = "{}"
-            await generate_block_layout("sunflower", 30, 40, 5)
+        with patch("backend.services.ollama_client._chat_with_model", new_callable=AsyncMock) as mock_chat:
+            mock_chat.side_effect = ["{}", "{}"]
+            await generate_block_layout("sunflower", 30, 40, 5, 75.0, 100.0)
 
-        user_msg = mock_chat.call_args[0][1]
+        user_msg = mock_chat.call_args_list[0].kwargs.get(
+            "user_message", mock_chat.call_args_list[0][0][2] if len(mock_chat.call_args_list[0][0]) > 2 else ""
+        )
         assert "30" in user_msg
         assert "40" in user_msg
         assert "5" in user_msg
@@ -356,6 +363,170 @@ class TestCheckHealth:
             MockClient.return_value = instance
 
             assert await check_health() is False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tests: _load_examples
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestLoadExamples:
+    def test_layout_examples_load(self):
+        messages = _load_examples("layout_example*.json")
+        # 3 layout files × 2 messages each = 6
+        assert len(messages) >= 6
+        assert messages[0]["role"] == "user"
+        assert messages[1]["role"] == "assistant"
+
+    def test_guide_example_loads(self):
+        messages = _load_examples("guide_example*.json")
+        assert len(messages) == 2
+        assert messages[0]["role"] == "user"
+        assert messages[1]["role"] == "assistant"
+        assert "## Overview" in messages[1]["content"]
+
+    def test_nonexistent_pattern_returns_empty(self):
+        messages = _load_examples("no_such_file_*.json")
+        assert messages == []
+
+    def test_layout_example_assistant_is_valid_json(self):
+        messages = _load_examples("layout_example*.json")
+        for msg in messages:
+            if msg["role"] == "assistant":
+                data = json.loads(msg["content"])
+                assert "fabrics" in data
+                assert "blocks" in data
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tests: Layout example validation (QuiltPattern.validate)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestLayoutExampleValidation:
+    @pytest.fixture(params=["layout_example_bird.json",
+                            "layout_example_mountain.json",
+                            "layout_example_flower.json"])
+    def example_data(self, request):
+        path = EXAMPLES_DIR / request.param
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_passes_validate(self, example_data):
+        gw = example_data["grid_width"]
+        gh = example_data["grid_height"]
+        qw = example_data.get("quilt_width_in", 60.0)
+        qh = example_data.get("quilt_height_in", 72.0)
+        cell_sizes = example_data.get("cell_sizes", [
+            {"w": qw / gw, "h": qh / gh} for _ in range(gw * gh)
+        ])
+        pattern = QuiltPattern(
+            grid_width=gw,
+            grid_height=gh,
+            quilt_width_in=qw,
+            quilt_height_in=qh,
+            cell_sizes=cell_sizes,
+        )
+        for f in example_data["fabrics"]:
+            pattern.fabrics.append(Fabric(id=f["id"], color_hex=f["color_hex"], name=f["name"]))
+        for b in example_data["blocks"]:
+            pattern.blocks.append(Block(x=b["x"], y=b["y"], width=b["width"],
+                                        height=b["height"], fabric_id=b["fabric_id"],
+                                        corners=b.get("corners") or {}))
+        errors = pattern.validate()
+        assert errors == [], f"Validation errors: {errors}"
+
+    def test_uses_all_declared_fabrics(self, example_data):
+        declared = {f["id"] for f in example_data["fabrics"]}
+        used = {b["fabric_id"] for b in example_data["blocks"]}
+        assert used == declared
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tests: Guide example content
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestGuideExampleContent:
+    @pytest.fixture
+    def guide_data(self):
+        path = EXAMPLES_DIR / "guide_example.json"
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_contains_all_seven_section_headers(self, guide_data):
+        output = guide_data["output"]
+        required_headers = [
+            "## Overview",
+            "## Materials & Fabric Requirements",
+            "## Cutting Instructions",
+            "## Block Assembly",
+            "## Row Assembly",
+            "## Quilt Top Assembly",
+            "## Finishing Notes",
+        ]
+        for header in required_headers:
+            assert header in output, f"Missing header: {header}"
+
+    def test_input_matches_user_message_format(self, guide_data):
+        inp = guide_data["input"]
+        assert "TITLE:" in inp
+        assert "FINISHED SIZE:" in inp
+        assert "CUTTING INSTRUCTIONS" in inp
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tests: _chat with extra_messages
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestChatExtraMessages:
+    @pytest.mark.asyncio
+    async def test_extra_messages_inserted_between_system_and_user(self):
+        captured = {}
+
+        async def mock_post(url, json=None, **kwargs):
+            captured["json"] = json
+            return _mock_chat_response("ok")
+
+        with patch("backend.services.ollama_client.httpx.AsyncClient") as MockClient:
+            instance = AsyncMock()
+            instance.post = mock_post
+            instance.__aenter__ = AsyncMock(return_value=instance)
+            instance.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = instance
+
+            extras = [
+                {"role": "user", "content": "example input"},
+                {"role": "assistant", "content": "example output"},
+            ]
+            await _chat("sys prompt", "real question", extra_messages=extras)
+
+        msgs = captured["json"]["messages"]
+        assert msgs[0]["role"] == "system"
+        assert msgs[1]["role"] == "user"
+        assert msgs[1]["content"] == "example input"
+        assert msgs[2]["role"] == "assistant"
+        assert msgs[2]["content"] == "example output"
+        assert msgs[3]["role"] == "user"
+        assert msgs[3]["content"] == "real question"
+        assert len(msgs) == 4
+
+    @pytest.mark.asyncio
+    async def test_no_extra_messages_preserves_original_behavior(self):
+        captured = {}
+
+        async def mock_post(url, json=None, **kwargs):
+            captured["json"] = json
+            return _mock_chat_response("ok")
+
+        with patch("backend.services.ollama_client.httpx.AsyncClient") as MockClient:
+            instance = AsyncMock()
+            instance.post = mock_post
+            instance.__aenter__ = AsyncMock(return_value=instance)
+            instance.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = instance
+
+            await _chat("sys", "usr")
+
+        msgs = captured["json"]["messages"]
+        assert len(msgs) == 2
+        assert msgs[0]["role"] == "system"
+        assert msgs[1]["role"] == "user"
 
 
 if __name__ == "__main__":

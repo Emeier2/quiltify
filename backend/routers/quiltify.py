@@ -58,7 +58,8 @@ async def quiltify_image(req: QuiltifyRequest) -> dict[str, Any]:
         grid_width=req.grid_width,
         grid_height=req.grid_height,
         palette_size=req.palette_size,
-        block_size_in=req.block_size_inches,
+        quilt_width_in=req.quilt_width_in,
+        quilt_height_in=req.quilt_height_in,
     )
 
     # Step 4: Validate + cutting chart
@@ -90,6 +91,7 @@ async def quiltify_image(req: QuiltifyRequest) -> dict[str, Any]:
             "cut_width_in": p.cut_width_in,
             "cut_height_in": p.cut_height_in,
             "quantity": p.quantity,
+            "piece_type": p.piece_type,
         }
         for p in chart.pieces
     ]

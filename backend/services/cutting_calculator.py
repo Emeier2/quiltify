@@ -17,6 +17,7 @@ FAT_QUARTER_HEIGHT = 18.0  # inches (unwashed)
 FAT_QUARTER_SQIN = FAT_QUARTER_WIDTH * FAT_QUARTER_HEIGHT  # 396
 STANDARD_FABRIC_WIDTH = 44.0  # WOF (width of fabric)
 WASTE_FACTOR = 1.10  # 10% for cutting waste and miscuts
+CORNER_WASTE_FACTOR = 1.60  # ~50% trimmed + 10% cutting waste for stitch-and-flip
 
 
 @dataclass
@@ -44,8 +45,14 @@ def calculate_requirements(
 
     for fabric_id, pieces in by_fabric.items():
         fab = fabric_map.get(fabric_id)
-        total_sqin = sum(p.cut_width_in * p.cut_height_in * p.quantity for p in pieces)
-        total_sqin_with_waste = total_sqin * WASTE_FACTOR
+        # Apply different waste factors: corner squares lose ~50% to trimming
+        total_sqin = 0.0
+        total_sqin_with_waste = 0.0
+        for p in pieces:
+            piece_sqin = p.cut_width_in * p.cut_height_in * p.quantity
+            total_sqin += piece_sqin
+            wf = CORNER_WASTE_FACTOR if p.piece_type == "corner" else WASTE_FACTOR
+            total_sqin_with_waste += piece_sqin * wf
 
         fat_quarters = math.ceil(total_sqin_with_waste / FAT_QUARTER_SQIN)
         yardage = _compute_wof_yardage(pieces, STANDARD_FABRIC_WIDTH)
@@ -104,8 +111,9 @@ def format_cutting_sequence(chart: CuttingChart, fabrics: list[Fabric]) -> list[
             f"or {req.yardage_wof} yd WOF)"
         )
         for piece in sorted_pieces:
+            label = "base rectangles" if piece.piece_type == "base" else "corner squares (stitch-and-flip)"
             instructions.append(
-                f"  • Cut {piece.quantity}× pieces {piece.cut_width_in}\" × {piece.cut_height_in}\""
+                f"  • Cut {piece.quantity}× {label} {piece.cut_width_in}\" × {piece.cut_height_in}\""
             )
 
     return instructions

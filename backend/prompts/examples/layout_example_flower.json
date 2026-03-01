@@ -1,0 +1,40 @@
+{
+  "prompt": "A simple daisy flower with stem",
+  "grid_width": 10,
+  "grid_height": 12,
+  "fabrics": [
+    {"id": "f1", "color_hex": "#B8C9A3", "name": "Sage Green"},
+    {"id": "f2", "color_hex": "#4A7C59", "name": "Leaf Green"},
+    {"id": "f3", "color_hex": "#F4D03F", "name": "Sunshine Yellow"},
+    {"id": "f4", "color_hex": "#FFFFFF", "name": "Petal White"},
+    {"id": "f5", "color_hex": "#5B3A29", "name": "Earth Brown"}
+  ],
+  "blocks": [
+    {"x": 0, "y": 0,  "width": 10, "height": 1, "fabric_id": "f1"},
+    {"x": 0, "y": 1,  "width": 4,  "height": 1, "fabric_id": "f1"},
+    {"x": 4, "y": 1,  "width": 2,  "height": 1, "fabric_id": "f4"},
+    {"x": 6, "y": 1,  "width": 4,  "height": 1, "fabric_id": "f1"},
+    {"x": 0, "y": 2,  "width": 3,  "height": 1, "fabric_id": "f1"},
+    {"x": 3, "y": 2,  "width": 4,  "height": 1, "fabric_id": "f4"},
+    {"x": 7, "y": 2,  "width": 3,  "height": 1, "fabric_id": "f1"},
+    {"x": 0, "y": 3,  "width": 2,  "height": 2, "fabric_id": "f1"},
+    {"x": 2, "y": 3,  "width": 2,  "height": 2, "fabric_id": "f4"},
+    {"x": 4, "y": 3,  "width": 2,  "height": 2, "fabric_id": "f3"},
+    {"x": 6, "y": 3,  "width": 2,  "height": 2, "fabric_id": "f4"},
+    {"x": 8, "y": 3,  "width": 2,  "height": 2, "fabric_id": "f1"},
+    {"x": 0, "y": 5,  "width": 3,  "height": 1, "fabric_id": "f1"},
+    {"x": 3, "y": 5,  "width": 4,  "height": 1, "fabric_id": "f4"},
+    {"x": 7, "y": 5,  "width": 3,  "height": 1, "fabric_id": "f1"},
+    {"x": 0, "y": 6,  "width": 4,  "height": 2, "fabric_id": "f1"},
+    {"x": 4, "y": 6,  "width": 2,  "height": 1, "fabric_id": "f4"},
+    {"x": 6, "y": 6,  "width": 4,  "height": 2, "fabric_id": "f1"},
+    {"x": 4, "y": 7,  "width": 2,  "height": 1, "fabric_id": "f2"},
+    {"x": 0, "y": 8,  "width": 3,  "height": 1, "fabric_id": "f1"},
+    {"x": 3, "y": 8,  "width": 4,  "height": 1, "fabric_id": "f2"},
+    {"x": 7, "y": 8,  "width": 3,  "height": 1, "fabric_id": "f1"},
+    {"x": 0, "y": 9,  "width": 4,  "height": 1, "fabric_id": "f1"},
+    {"x": 4, "y": 9,  "width": 2,  "height": 1, "fabric_id": "f2"},
+    {"x": 6, "y": 9,  "width": 4,  "height": 1, "fabric_id": "f1"},
+    {"x": 0, "y": 10, "width": 10, "height": 2, "fabric_id": "f5"}
+  ]
+}

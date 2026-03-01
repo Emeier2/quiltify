@@ -16,7 +16,8 @@ interface Params {
   grid_width: number
   grid_height: number
   palette_size: number
-  block_size_inches: number
+  quilt_width_in: number
+  quilt_height_in: number
 }
 
 interface Props {
@@ -29,7 +30,8 @@ export function PromptInput({ onSubmit, loading }: Props) {
   const [gridWidth, setGridWidth] = useState(40)
   const [gridHeight, setGridHeight] = useState(50)
   const [paletteSize, setPaletteSize] = useState(6)
-  const [blockSize, setBlockSize] = useState(2.5)
+  const [quiltWidth, setQuiltWidth] = useState(60)
+  const [quiltHeight, setQuiltHeight] = useState(72)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   function handleSubmit(e: React.FormEvent) {
@@ -40,7 +42,8 @@ export function PromptInput({ onSubmit, loading }: Props) {
       grid_width: gridWidth,
       grid_height: gridHeight,
       palette_size: paletteSize,
-      block_size_inches: blockSize,
+      quilt_width_in: quiltWidth,
+      quilt_height_in: quiltHeight,
     })
   }
 
@@ -116,7 +119,7 @@ export function PromptInput({ onSubmit, loading }: Props) {
           {showAdvanced ? 'Hide' : 'Show'} advanced options
         </button>
         {showAdvanced && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginTop: 10 }}>
             <label style={labelStyle}>
               Grid Width
               <input type="number" min={10} max={100} value={gridWidth}
@@ -133,9 +136,14 @@ export function PromptInput({ onSubmit, loading }: Props) {
                      onChange={e => setPaletteSize(+e.target.value)} style={inputStyle} />
             </label>
             <label style={labelStyle}>
-              Block Size (in)
-              <input type="number" min={1} max={6} step={0.5} value={blockSize}
-                     onChange={e => setBlockSize(+e.target.value)} style={inputStyle} />
+              Quilt Width (in)
+              <input type="number" min={10} max={200} step={0.25} value={quiltWidth}
+                     onChange={e => setQuiltWidth(+e.target.value)} style={inputStyle} />
+            </label>
+            <label style={labelStyle}>
+              Quilt Height (in)
+              <input type="number" min={10} max={200} step={0.25} value={quiltHeight}
+                     onChange={e => setQuiltHeight(+e.target.value)} style={inputStyle} />
             </label>
           </div>
         )}
