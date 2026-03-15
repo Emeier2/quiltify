@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 _sam_predictor = None
 _controlnet_pipeline = None
+GPU_ONLY = os.environ.get("GPU_ONLY", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _load_sam() -> None:
@@ -38,6 +39,9 @@ def _load_sam() -> None:
             return
 
         sam = sam_model_registry["vit_b"](checkpoint=checkpoint_path)
+        if GPU_ONLY and not torch.cuda.is_available():
+            logger.warning("GPU_ONLY is enabled but CUDA is not available; SAM disabled")
+            return
         device = "cuda" if torch.cuda.is_available() else "cpu"
         sam.to(device=device)
         _sam_predictor = SamAutomaticMaskGenerator(sam, points_per_side=16)
@@ -54,6 +58,10 @@ def _load_controlnet() -> None:
         import torch
         from diffusers import FluxControlNetPipeline, FluxControlNetModel
 
+        if GPU_ONLY and not torch.cuda.is_available():
+            logger.warning("GPU_ONLY is enabled but CUDA is not available; ControlNet disabled")
+            return
+
         controlnet = FluxControlNetModel.from_pretrained(
             "InstantX/FLUX.1-dev-Controlnet-Canny",
             torch_dtype=torch.float16,
@@ -63,7 +71,10 @@ def _load_controlnet() -> None:
             controlnet=controlnet,
             torch_dtype=torch.float16,
         )
-        pipe.enable_model_cpu_offload()
+        if GPU_ONLY:
+            pipe.to("cuda")
+        else:
+            pipe.enable_model_cpu_offload()
         _controlnet_pipeline = pipe
         logger.info("Loaded FLUX ControlNet Canny")
     except Exception as e:

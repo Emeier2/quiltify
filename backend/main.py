@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .routers import generate, quiltify, guide, export
-from .services import ollama_client, flux_pipeline
+from .services import ollama_client, flux_pipeline, svg_generator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +29,9 @@ async def lifespan(app: FastAPI):
 
     pipe_status = flux_pipeline.pipeline_status()
     logger.info(f"FLUX pipeline status: {pipe_status}")
+
+    sv_status = svg_generator.generator_status()
+    logger.info(f"StarVector status: {sv_status}")
 
     yield
     # Shutdown (nothing to clean up currently)
@@ -65,10 +68,12 @@ app.include_router(export.router)
 async def health() -> dict:
     ollama_ok = await ollama_client.check_health()
     pipe = flux_pipeline.pipeline_status()
+    sv = svg_generator.generator_status()
     return {
         "status": "ok",
         "ollama": ollama_ok,
         "flux_pipeline": pipe,
+        "starvector": sv,
     }
 
 

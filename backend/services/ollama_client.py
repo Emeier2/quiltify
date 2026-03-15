@@ -110,7 +110,11 @@ async def generate_block_layout(
         f"Grid: {grid_width} wide x {grid_height} tall\n"
         f"Quilt size: {quilt_width_in}\" wide x {quilt_height_in}\" tall\n"
         f"Use exactly {palette_size} fabrics.\n"
-        f"Return ONLY valid JSON, no explanation."
+        f"CRITICAL: Blocks must cover ALL {grid_width * grid_height} cells with NO gaps. "
+        f"Use large background blocks to fill remaining space. "
+        f"Use stitch-and-flip corners (nw/ne/sw/se) to create diagonal details on planets.\n"
+        f"Do NOT include cell_sizes — they will be computed automatically.\n"
+        f"Return ONLY valid JSON with fabrics and blocks arrays, no explanation. /no_think"
     )
     examples = _load_examples("geometry_example*.json")
 
@@ -124,14 +128,27 @@ async def generate_block_layout(
     if not layout:
         return {}
 
+    # Post-process: fill gaps and fix overlaps via rasterize-then-merge
+    layout = _postprocess_layout(layout, grid_width, grid_height)
+
+    # Auto-fill cell_sizes if the model omitted them (uniform grid)
+    if "cell_sizes" not in layout:
+        cell_w = round(quilt_width_in / grid_width, 4)
+        cell_h = round(quilt_height_in / grid_height, 4)
+        layout["cell_sizes"] = [{"w": cell_w, "h": cell_h}
+                                for _ in range(grid_width * grid_height)]
+
     # Critique/repair pass with smaller model
     critic_prompt = _load_prompt("geometry_critic.txt")
     if critic_prompt:
+        # Strip cell_sizes before sending to critic to save tokens
+        critic_layout = {k: v for k, v in layout.items() if k != "cell_sizes"}
         critic_message = (
             "Validate and repair this quilt JSON. Fix any errors and return ONLY JSON.\n"
+            "Do NOT include cell_sizes in your output.\n"
             f"Grid: {grid_width}x{grid_height}\n"
             f"Quilt size: {quilt_width_in}x{quilt_height_in} inches\n"
-            f"Input JSON:\n{json.dumps(layout)}"
+            f"Input JSON:\n{json.dumps(critic_layout)}"
         )
         repaired_raw = await _chat_with_model(
             model=OLLAMA_MODEL_CRITIC,
@@ -140,6 +157,10 @@ async def generate_block_layout(
         )
         repaired = _extract_json(repaired_raw)
         if repaired:
+            repaired = _postprocess_layout(repaired, grid_width, grid_height)
+            # Re-fill cell_sizes after critic pass
+            if "cell_sizes" not in repaired:
+                repaired["cell_sizes"] = layout["cell_sizes"]
             return repaired
 
     return layout
@@ -160,13 +181,17 @@ async def _chat(
         "model": OLLAMA_MODEL,
         "messages": messages,
         "stream": False,
-        "options": {"temperature": 0.3, "num_predict": 2048},
+        "options": {"temperature": 0.3, "num_predict": 8192},
     }
     async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.post(f"{OLLAMA_BASE}/api/chat", json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-        return data["message"]["content"]
+        try:
+            resp = await client.post(f"{OLLAMA_BASE}/api/chat", json=payload)
+            if resp.status_code != 200:
+                return await _chat_via_generate(client, payload, timeout)
+            data = resp.json()
+            return data["message"]["content"]
+        except Exception:
+            return await _chat_via_generate(client, payload, timeout)
 
 
 async def _chat_with_model(
@@ -185,13 +210,17 @@ async def _chat_with_model(
         "model": model,
         "messages": messages,
         "stream": False,
-        "options": {"temperature": 0.3, "num_predict": 2048},
+        "options": {"temperature": 0.3, "num_predict": 8192},
     }
     async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.post(f"{OLLAMA_BASE}/api/chat", json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-        return data["message"]["content"]
+        try:
+            resp = await client.post(f"{OLLAMA_BASE}/api/chat", json=payload)
+            if resp.status_code != 200:
+                return await _chat_via_generate(client, payload, timeout)
+            data = resp.json()
+            return data["message"]["content"]
+        except Exception:
+            return await _chat_via_generate(client, payload, timeout)
 
 
 async def check_health() -> bool:
@@ -278,10 +307,133 @@ Rules:
 - Each fabric id must be referenced in at least one block"""
 
 
+def _postprocess_layout(
+    layout: dict, grid_width: int, grid_height: int
+) -> dict:
+    """Rasterize model blocks to a grid and re-merge to fix overlaps/gaps.
+
+    Steps:
+    1. Paint each block onto a 2D grid (later blocks overwrite earlier ones).
+       Preserve corner info for cells that have corners.
+    2. Fill any uncovered cells with the background fabric (first fabric).
+    3. Greedy-merge same-fabric cells into maximal rectangles.
+    4. Re-attach corners to the merged blocks.
+    """
+    fabrics = layout.get("fabrics", [])
+    blocks = layout.get("blocks", [])
+    if not fabrics or not blocks:
+        return layout
+
+    bg_fabric = fabrics[0]["id"]  # first fabric is background
+
+    # Build per-cell fabric_id grid and corner map
+    grid = [[bg_fabric] * grid_width for _ in range(grid_height)]
+    corner_cells: dict[tuple[int, int], dict[str, str]] = {}
+
+    for blk in blocks:
+        bx, by = blk.get("x", 0), blk.get("y", 0)
+        bw, bh = blk.get("width", 1), blk.get("height", 1)
+        fid = blk.get("fabric_id", bg_fabric)
+        corners = blk.get("corners", {})
+        for dy in range(bh):
+            for dx in range(bw):
+                cx, cy = bx + dx, by + dy
+                if 0 <= cx < grid_width and 0 <= cy < grid_height:
+                    grid[cy][cx] = fid
+        # Attach corners to specific cells at actual block corners
+        if corners:
+            corner_positions = {
+                "nw": (bx, by),
+                "ne": (bx + bw - 1, by),
+                "sw": (bx, by + bh - 1),
+                "se": (bx + bw - 1, by + bh - 1),
+            }
+            for cname, cfid in corners.items():
+                pos = corner_positions.get(cname)
+                if pos and 0 <= pos[0] < grid_width and 0 <= pos[1] < grid_height:
+                    corner_cells.setdefault(pos, {})[cname] = cfid
+
+    # Greedy merge: corner cells become 1x1, others merge into maximal rects
+    visited = [[False] * grid_width for _ in range(grid_height)]
+    merged_blocks: list[dict] = []
+
+    # First pass: emit corner cells as 1x1
+    for (cx, cy), corners in corner_cells.items():
+        visited[cy][cx] = True
+        merged_blocks.append({
+            "x": cx, "y": cy, "width": 1, "height": 1,
+            "fabric_id": grid[cy][cx], "corners": corners,
+        })
+
+    # Second pass: greedy merge
+    for gy in range(grid_height):
+        for gx in range(grid_width):
+            if visited[gy][gx]:
+                continue
+            fid = grid[gy][gx]
+            max_w = 0
+            while (gx + max_w < grid_width
+                   and grid[gy][gx + max_w] == fid
+                   and not visited[gy][gx + max_w]):
+                max_w += 1
+            max_h = 1
+            while gy + max_h < grid_height:
+                row_ok = all(
+                    grid[gy + max_h][gx + dx] == fid
+                    and not visited[gy + max_h][gx + dx]
+                    for dx in range(max_w)
+                )
+                if not row_ok:
+                    break
+                max_h += 1
+            for dy in range(max_h):
+                for dx in range(max_w):
+                    visited[gy + dy][gx + dx] = True
+            merged_blocks.append({
+                "x": gx, "y": gy, "width": max_w, "height": max_h,
+                "fabric_id": fid, "corners": {},
+            })
+
+    layout["blocks"] = merged_blocks
+    return layout
+
+
 def _extract_json(raw: str) -> dict:
+    import re
+    # Strip <think>...</think> blocks (qwen3 reasoning mode)
+    raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL)
+    # Strip markdown code fences
+    raw = re.sub(r"```(?:json)?\s*", "", raw)
     try:
         start = raw.find("{")
         end = raw.rfind("}") + 1
         return json.loads(raw[start:end])
     except (json.JSONDecodeError, ValueError):
         return {}
+
+
+async def _chat_via_generate(
+    client: httpx.AsyncClient,
+    chat_payload: dict,
+    timeout: float,
+) -> str:
+    """Fallback for Ollama servers that don't support /api/chat."""
+    # Flatten messages into a single prompt
+    messages = chat_payload.get("messages", [])
+    prompt_lines = []
+    for msg in messages:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        prompt_lines.append(f"[{role.upper()}]\n{content}")
+    prompt = "\n\n".join(prompt_lines)
+
+    gen_payload = {
+        "model": chat_payload.get("model"),
+        "prompt": prompt,
+        "stream": False,
+        "options": chat_payload.get("options", {}),
+    }
+    resp = await client.post(f"{OLLAMA_BASE}/api/generate", json=gen_payload, timeout=timeout)
+    resp.raise_for_status()
+    data = resp.json()
+    return data.get("response", "")

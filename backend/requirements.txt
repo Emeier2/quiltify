@@ -26,3 +26,9 @@ svgwrite>=1.4.3
 
 # PDF export (optional)
 weasyprint
+
+# AMD GPU support (optional):
+# pip install onnxruntime-directml optimum[onnxruntime]
+
+# StarVector 8B (SVG generation, uses transformers + torch above):
+# Model: joanrodai/starvector-8b (~16GB VRAM)
