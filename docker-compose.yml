@@ -19,6 +19,7 @@ services:
 
   # ── FastAPI backend ─────────────────────────────────────────────────────────
   backend:
+    image: ${IMAGE_REGISTRY:-}quiltify-backend:latest
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -50,6 +51,7 @@ services:
 
   # ── React frontend (nginx) ──────────────────────────────────────────────────
   frontend:
+    image: ${IMAGE_REGISTRY:-}quiltify-frontend:latest
     build:
       context: frontend
       dockerfile: Dockerfile
