@@ -1,0 +1,65 @@
+services:
+
+  # ── Ollama (local LLM — quilt guide text generation) ───────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"   # expose if you need direct Ollama access from host
+    # GPU passthrough (remove the deploy block to run Ollama on CPU)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ── FastAPI backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:14b}
+      OLLAMA_MODEL_GEOMETRY: ${OLLAMA_MODEL_GEOMETRY:-qwen2.5:14b}
+      OLLAMA_MODEL_CRITIC: ${OLLAMA_MODEL_CRITIC:-gemma3:12b}
+      FORGE_API_URL: ${FORGE_API_URL:-http://localhost:7860}
+      # Comma-separated list of allowed CORS origins.
+      # Set to your cloud frontend URL (e.g. https://quiltify.example.com).
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost,http://localhost:80}
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
+      - sam_cache:/root/.cache/sam
+    ports:
+      - "8000:8000"     # expose if you need direct API access from host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ── React frontend (nginx) ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  ollama_data:
+  huggingface_cache:
+  sam_cache:
